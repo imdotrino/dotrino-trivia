@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "@dotrino/install": "0.1.1",
-    "@dotrino/nav": "0.2.0",
-    "@dotrino/store": "^0.3.0"
+    "@dotrino/nav": "0.2.1",
+    "@dotrino/store": "0.4.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
