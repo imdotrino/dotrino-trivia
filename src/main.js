@@ -35,7 +35,7 @@ const view = h('main', { class: 'view' });
 const toast = h('div', { class: 'toast' });
 const support = h('dotrino-support', {
   class: 'topbar-coin',
-  href: 'https://ko-fi.com/dotrino', repo: 'dotrino/trivia', discord: 'https://discord.gg/D648uq7cth',
+  href: 'https://ko-fi.com/dotrino', repo: 'imdotrino/dotrino-trivia', discord: 'https://discord.gg/D648uq7cth',
 });
 clear(app).append(bgLayer, topbar, view, toast);
 
