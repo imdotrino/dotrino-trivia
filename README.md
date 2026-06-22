@@ -1,5 +1,7 @@
 # Trivia
 
+> **Parte del ecosistema [Dotrino](https://dotrino.com).** Misión: aplicaciones que resuelven problemas comunes, respetando tu privacidad — sin anuncios, sin cookies, sin rastreo de datos, sin vender tu identidad a nadie.
+
 Trivia **configurable** del ecosistema [Dotrino](https://dotrino.com/). Pegás
 un **JSON de preguntas**, elegís un **color** (de ahí se deriva toda la paleta) y
 **modo claro/oscuro**, ponés tu **logo** y **fondos** para móvil y web, elegís el
