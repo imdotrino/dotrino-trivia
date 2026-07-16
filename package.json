@@ -17,7 +17,7 @@
     "@dotrino/reputation": "0.8.0",
     "@dotrino/store": "0.4.0",
     "@dotrino/support": "0.8.0",
-    "@dotrino/topbar": "0.3.0"
+    "@dotrino/topbar": "0.4.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
