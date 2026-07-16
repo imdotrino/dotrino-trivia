@@ -29,18 +29,23 @@ body.mode-play .bg-layer::after { content: ""; position: absolute; inset: 0; bac
   body.mode-play .bg-layer { background-image: var(--overlay-grad, none), var(--bg-mobile-img); }
 }
 
-.topbar, .view { position: relative; z-index: 1; }
+.view { position: relative; z-index: 1; }
 
-/* ---- topbar ---- */
-.topbar {
-  display: flex; align-items: center; gap: 8px;
-  padding: calc(env(safe-area-inset-top) + 10px) 14px 10px;
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
-  border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; backdrop-filter: blur(8px);
+/* ---- barra superior ----
+   Es el Web Component estándar del ecosistema (<dotrino-topbar>): trae volver,
+   marca, idioma, perfil y la moneda de support. La app no la re-arma: sólo la
+   tematiza con su paleta (que cambia según el color y el modo claro/oscuro que
+   elige el usuario) y la fija arriba, porque el componente no es sticky. */
+dotrino-topbar {
+  position: sticky; top: 0; z-index: 10;
+  --dotrino-topbar-bg: color-mix(in srgb, var(--surface) 80%, transparent);
+  --dotrino-topbar-border: var(--border);
+  --dotrino-topbar-text: var(--text);
+  --dotrino-topbar-muted: var(--muted);
+  --dotrino-topbar-accent: var(--brand);
+  --dotrino-topbar-accent-text: var(--on-brand);
+  --dotrino-topbar-font: inherit;
 }
-/* Chevron de volver (Web Component @dotrino/nav). */
-.cc-back { color: var(--text); --cc-back-size: 38px; --cc-back-bg-hover: color-mix(in srgb, var(--text) 8%, transparent); margin-left: -4px; }
 /* Botón instalar (Web Component @dotrino/install): mismo look
    que .btn.btn-ghost.sm de la topbar (fantasma con borde, compacto). */
 .cc-install {
@@ -59,13 +64,6 @@ body.mode-play .bg-layer::after { content: ""; position: absolute; inset: 0; bac
 .cc-install::part(button) {
   border: 1px solid var(--border); font-weight: 700; font-family: inherit; line-height: 1.1;
 }
-.brand { display: flex; align-items: center; gap: 9px; }
-.brand-logo { width: 28px; height: 28px; border-radius: 7px; display: block; }
-.brand span { font-weight: 800; letter-spacing: .02em; font-size: 18px; }
-.spacer { flex: 1; }
-/* moneda de support dentro de la topbar, a la derecha (como en las demás apps) */
-.topbar-coin { flex: 0 0 auto; display: flex; align-items: center; padding-left: 4px; }
-
 /* ---- botones ---- */
 .btn {
   border: 1px solid transparent; border-radius: 11px; cursor: pointer;

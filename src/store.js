@@ -27,6 +27,14 @@ async function getBackend() {
     try {
       const mod = await import('@dotrino/store');
       const store = await mod.Store.connect();
+      // Store.connect() devuelve el singleton aunque su iframe TODAVÍA no esté
+      // listo, si otro consumidor de la misma app lo creó hace un instante (la
+      // moneda de support también usa el store, para "recientes"). Quien pierde
+      // esa carrera postearía su primer listThread a un iframe sin cargar: el
+      // mensaje se pierde y la petición muere recién a los 8 s, retrasando el
+      // arranque. ready() es idempotente (devuelve la misma promesa), así que
+      // esperarlo aquí es gratis y nos garantiza un store utilizable.
+      if (typeof store?.ready === 'function') await store.ready();
       // sanity-check de la API que usamos
       if (store && typeof store.appendMessage === 'function' && typeof store.listThread === 'function') {
         return { kind: 'store', store,

@@ -1,6 +1,6 @@
 import './style.css';
 import { h, clear } from './dom.js';
-import { t, getLang, toggleLang } from './i18n.js';
+import { t, getLang, setLang } from './i18n.js';
 import { defaultConfig, mergeConfig } from './state.js';
 import { applyPalette } from './palette.js';
 import { loadConfig, saveConfig, resolveAsset } from './store.js';
@@ -13,6 +13,17 @@ import { createBackNav } from '@dotrino/nav';
 // beforeinstallprompt temprano, maneja iOS con su propio modal (sin alert) y se
 // auto-oculta si ya está instalada. Solo importar registra <dotrino-install>.
 import '@dotrino/install';
+// Moneda de support: en modo edición la trae el <dotrino-topbar>; en modo juego
+// (pantalla completa, sin barra) la montamos nosotros flotando arriba a la
+// derecha. Es el mismo componente y la misma versión: no hay dos copias.
+import '@dotrino/support';
+// Barra superior estándar del ecosistema (§5): marca + volver + acciones +
+// idioma + perfil + moneda, todo en UN componente. La app no re-arma el header.
+import '@dotrino/topbar';
+// Identidad (§6.1): el topbar es dueño del modal "Mi perfil"; sólo hay que
+// pasarle los pilares del ecosistema.
+import { getIdentity } from './services/identity.js';
+import { getReputation } from './services/reputation.js';
 
 // Navegación "volver" unificada del ecosistema (registra <dotrino-back> y
 // captura el botón físico de Android / gesto de iOS / atrás del navegador).
@@ -28,28 +39,87 @@ const app = document.getElementById('app');
 
 let cfg = defaultConfig();
 
+// Tema del modal "Mi perfil" (vars --ccp-*). Se expresa con las variables de la
+// paleta de la trivia (no con colores fijos): el usuario elige el color y el
+// modo claro/oscuro, y el modal los sigue solo.
+const PROFILE_THEME = {
+  '--ccp-bg': 'var(--surface)', '--ccp-bg-2': 'var(--bg)',
+  '--ccp-bg-3': 'var(--surface-2)', '--ccp-bg-4': 'var(--surface-2)',
+  '--ccp-border': 'var(--border)', '--ccp-text': 'var(--text)', '--ccp-muted': 'var(--muted)',
+  '--ccp-accent': 'var(--brand)', '--ccp-accent-2': 'var(--brand-2)',
+  '--ccp-accent-text': 'var(--on-brand)',
+  '--ccp-input-bg': 'var(--surface-2)', '--ccp-radius': 'var(--radius)',
+};
+
 // ---- shell ----
 const bgLayer = h('div', { class: 'bg-layer' });
-const topbar = h('header', { class: 'topbar' });
 const view = h('main', { class: 'view' });
 const toast = h('div', { class: 'toast' });
-const support = h('dotrino-support', {
-  class: 'topbar-coin',
+
+// Engrane: toggle a modo juego (mismo lugar que el de la pantalla de juego, que
+// vuelve a edición). Va en el slot por defecto = acciones de la app.
+const gearBtn = h('button', {
+  class: 'btn btn-ghost icon-btn', 'data-testid': 'play-btn',
+  onclick: () => showPlay({ published: false }), html: ICON_GEAR,
+});
+// Botón instalar: al slot 'end' (light DOM → lo estiliza el CSS de la app).
+const installBtn = h('dotrino-install', { slot: 'end', class: 'cc-install sm', 'data-testid': 'install-btn' });
+
+// Barra superior estándar (§5/§6/§6.1): trae volver, marca, idioma, perfil y la
+// moneda de support. Se construye UNA sola vez y NO se re-renderiza (sus hijos
+// viven en slots): re-crearla parpadearía y reinstalaría el "volver".
+// La clase .topbar es sólo el gancho estable de los tests E2E.
+const topbar = h('dotrino-topbar', {
+  class: 'topbar',
+  brand: BRAND,
+  icon: 'icon.svg',
+  'brand-href': './',
+  profile: true,
+  'support-href': 'https://ko-fi.com/dotrino',
+  'support-repo': 'imdotrino/dotrino-trivia',
+  'support-discord': 'https://discord.gg/D648uq7cth',
+}, gearBtn, installBtn);
+topbar.profileTheme = PROFILE_THEME;
+
+// Moneda de support del modo juego: sin barra donde anclarla, flota arriba a la
+// derecha (§6.1). Sólo está en el DOM mientras se juega.
+const playCoin = h('dotrino-support', {
+  floating: true,
   href: 'https://ko-fi.com/dotrino', repo: 'imdotrino/dotrino-trivia', discord: 'https://discord.gg/D648uq7cth',
 });
+
 clear(app).append(bgLayer, topbar, view, toast);
 
-// La moneda de support vive en la topbar (a la derecha, como en las demás apps)
-// durante el modo edición; en modo juego (sin topbar) flota arriba a la derecha.
-function coinInTopbar() {
-  support.removeAttribute('floating');
-  support.className = 'topbar-coin';
-  topbar.append(support);
+// ---- idioma ----
+// El toggle ES/EN es el del topbar (fuente de verdad, persiste en
+// 'dotrino.lang'). La app sólo lo sigue: sincroniza sus propios textos y los
+// componentes del light DOM, que no heredan el idioma solos.
+function syncLang() {
+  const l = getLang();
+  gearBtn.title = t('play');
+  gearBtn.setAttribute('aria-label', t('play'));
+  installBtn.setAttribute('lang', l);
+  playCoin.setAttribute('lang', l);
 }
-function coinFloating() {
-  support.className = '';
-  support.setAttribute('floating', '');
-  app.append(support);
+syncLang();
+topbar.addEventListener('dotrino-lang', (e) => {
+  setLang(e.detail.lang);
+  syncLang();
+  // El toggle sólo se ve en la barra (modo edición): repintamos el editor con
+  // los textos del idioma nuevo.
+  if (!document.body.classList.contains('mode-play')) showEditor();
+});
+
+// ---- identidad (§6.1) ----
+// El topbar abre "Mi perfil" él mismo; sólo hay que pasarle los pilares. Sin
+// vault (offline/bloqueado) el botón queda inerte y la trivia funciona igual.
+// Se cablea DESPUÉS del primer render (ver el final del archivo): el perfil es
+// secundario y su iframe no debe competir con el store por el arranque.
+async function wireIdentity() {
+  const identity = await getIdentity();
+  if (!identity) return;
+  topbar.identity = identity;
+  topbar.reputation = await getReputation();
 }
 
 // ---- tema (paleta + fondos) ----
@@ -80,31 +150,12 @@ function commit() {
 }
 
 // ---- vistas ----
-function svgIcon() {
-  return h('img', { class: 'brand-logo', src: 'icon.svg', alt: '', width: '30', height: '30' });
-}
-
-function renderTopbar() {
-  clear(topbar).append(
-    // Chevron de volver arriba a la izquierda (estándar del ecosistema): sin
-    // capa interna lleva a la página anterior / dotrino.com.
-    h('dotrino-back', { class: 'cc-back', lang: getLang() }),
-    // Engrane: toggle a modo juego (mismo lugar que el de la pantalla de juego,
-    // que vuelve a edición).
-    h('button', { class: 'btn btn-ghost icon-btn', title: t('play'), 'aria-label': t('play'), onclick: () => showPlay({ published: false }), html: ICON_GEAR }),
-    h('div', { class: 'brand' }, svgIcon(), h('span', {}, BRAND)),
-    h('div', { class: 'spacer' }),
-    h('button', { class: 'btn btn-ghost sm', title: 'es/en', onclick: () => { toggleLang(); showEditor(); } }, getLang() === 'es' ? 'EN' : 'ES'),
-    h('dotrino-install', { class: 'cc-install sm', 'data-testid': 'install-btn', lang: getLang() }),
-  );
-  coinInTopbar();
-}
-
 function showEditor() {
   setUiMode('edit');
   document.body.classList.remove('mode-play');
   topbar.style.display = '';
-  renderTopbar();
+  // En edición la moneda es la del topbar: la flotante sale del DOM.
+  playCoin.remove();
   clear(view).append(renderEditor(cfg, commit));
   applyTheme(cfg);
   // La edición es una capa sobre el juego: volver (físico/chevron) regresa al
@@ -120,7 +171,8 @@ async function showPlay({ published, playCfg }) {
   if (!published) setUiMode('play');
   document.body.classList.add('mode-play');
   topbar.style.display = 'none';
-  coinFloating();
+  // Sin barra: la moneda flota arriba a la derecha.
+  app.append(playCoin);
   await applyTheme(c);
   const images = { logo: await resolvedLogo(c) };
   clear(view).append(renderPlay(c, {
@@ -151,9 +203,9 @@ async function doPublish() {
 }
 
 // ---- PWA install ----
-// El botón de instalar es ahora el Web Component <dotrino-install> del
-// ecosistema (ver renderTopbar): captura beforeinstallprompt, maneja iOS y se
-// auto-oculta. No hace falta lógica local.
+// El botón de instalar es el Web Component <dotrino-install> del ecosistema
+// (va en el slot 'end' del topbar, ver el shell): captura beforeinstallprompt,
+// maneja iOS y se auto-oculta. No hace falta lógica local.
 
 // ---- boot ----
 async function boot() {
@@ -170,7 +222,10 @@ async function boot() {
   if (getUiMode() === 'edit') showEditor();
   else await showPlay({ published: false });
 }
-boot();
+// El vault de identidad se conecta cuando la app YA está en pantalla: su iframe
+// es trabajo de red que no debe retrasar el arranque (la trivia se juega igual
+// sin él). `finally`: si el arranque falla, el perfil se cablea de todos modos.
+boot().finally(() => { wireIdentity(); });
 
 // Si el #fragment cambia en caliente (p. ej. pegan un enlace publicado en una
 // pestaña ya abierta), entrar al modo limpio sin recargar.

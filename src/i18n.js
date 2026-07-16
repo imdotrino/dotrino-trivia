@@ -83,7 +83,22 @@ const DICT = {
   },
 };
 
-const LS_LANG = 'trivia.lang';
+// El idioma lo manda el <dotrino-topbar> (§5): su toggle es el único de la app y
+// persiste en la clave del ecosistema 'dotrino.lang', compartida por todas las
+// apps. Aquí sólo la leemos y la seguimos.
+const LS_LANG = 'dotrino.lang';
+const LS_LANG_OLD = 'trivia.lang'; // clave propia anterior a la barra estándar
+
+// Migración de una sola vez: si el usuario ya había elegido idioma en la clave
+// vieja y todavía no hay una del ecosistema, la copiamos para no resetearlo.
+try {
+  const old = localStorage.getItem(LS_LANG_OLD);
+  if ((old === 'es' || old === 'en') && !localStorage.getItem(LS_LANG)) {
+    localStorage.setItem(LS_LANG, old);
+  }
+} catch {}
+
+// Mismo criterio que el topbar: preferencia guardada → idioma del navegador → es.
 let lang = (() => {
   try { const s = localStorage.getItem(LS_LANG); if (s === 'es' || s === 'en') return s; } catch {}
   return (navigator.language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es';
@@ -94,7 +109,6 @@ export function setLang(l) {
   lang = l === 'en' ? 'en' : 'es';
   try { localStorage.setItem(LS_LANG, lang); } catch {}
 }
-export function toggleLang() { setLang(lang === 'es' ? 'en' : 'es'); return lang; }
 
 export function t(key, params) {
   let s = (DICT[lang] && DICT[lang][key]) ?? (DICT.es[key]) ?? key;
