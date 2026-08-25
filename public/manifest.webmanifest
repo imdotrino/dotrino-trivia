@@ -1,7 +1,7 @@
 {
   "name": "Trivia — Dotrino",
   "short_name": "Trivia",
-  "description": "Trivia configurable: pegá tu JSON de preguntas, personalizá color, logo y fondos, y publicá un enlace para jugar.",
+  "description": "Trivia configurable: pega tu JSON de preguntas, personaliza color, logo y fondos, y publica un enlace para jugar.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
