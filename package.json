@@ -18,11 +18,11 @@
     "@dotrino/reputation": "0.9.0",
     "@dotrino/store": "0.7.0",
     "@dotrino/support": "0.8.1",
-    "@dotrino/topbar": "0.9.0"
+    "@dotrino/topbar": "0.9.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
-    "vite": "^7.3.1",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vite": "^7.3.1"
   }
 }
