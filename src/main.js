@@ -138,10 +138,12 @@ async function applyTheme(c) {
 }
 async function resolvedLogo(c) { return await resolveAsset(c.theme.logo); }
 
-function showToast(msg) {
+function showToast(msg, ms = 2600) {
   toast.textContent = msg; toast.classList.add('show');
-  clearTimeout(showToast._t); showToast._t = setTimeout(() => toast.classList.remove('show'), 2600);
+  clearTimeout(showToast._t); showToast._t = setTimeout(() => toast.classList.remove('show'), ms);
 }
+// Si el almacén no abre, la partida sigue pero NO se guarda: se dice (store.js, sin repliegue).
+import('./store.js').then(({ onStoreProblem }) => onStoreProblem(() => showToast('⚠ ' + t('storeProblem'), 8000)));
 
 // ---- persistencia (debounced) ----
 let saveTimer = null;

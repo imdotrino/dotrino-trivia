@@ -2,6 +2,7 @@
 // localStorage. El contenido de la trivia va en el idioma que cargue el usuario.
 const DICT = {
   es: {
+    storeProblem: 'No se pudo abrir tu almacén: esta partida no se guardará.',
     play: 'Jugar', publish: 'Publicar', edit: 'Editar', install: 'Instalar',
     copyLink: 'Copiar enlace', linkCopied: '¡Enlace copiado!',
     linkDropped: 'Enlace copiado (las imágenes subidas no se incluyen; usa URLs para compartirlas).',
@@ -42,6 +43,7 @@ const DICT = {
     topicPh: 'Capitales del mundo',
   },
   en: {
+    storeProblem: 'Could not open your storage: this game will not be saved.',
     play: 'Play', publish: 'Publish', edit: 'Edit', install: 'Install',
     copyLink: 'Copy link', linkCopied: 'Link copied!',
     linkDropped: 'Link copied (uploaded images are not included; use URLs to share them).',
