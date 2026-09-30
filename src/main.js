@@ -119,6 +119,8 @@ async function wireIdentity() {
   const identity = await getIdentity();
   if (!identity) return;
   topbar.identity = identity;
+  // El estado del respaldo en la bóveda, en el botón de perfil (topbar ≥ 0.13).
+  import('./store.js').then(m => m.storeHandle()).then(s => { if (s) topbar.store = s; }).catch(() => {});
   topbar.reputation = await getReputation();
 }
 

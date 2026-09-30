@@ -26,7 +26,13 @@ async function getBackend() {
   backendPromise = (async () => {
     try {
       const mod = await import('@dotrino/store');
-      const store = await mod.Store.connect();
+      const { getIdentity } = await import('./services/identity.js');
+      const identity = await getIdentity();
+      // Atado al PERFIL (respaldo en la bóveda, sin mezclar cuentas). Hasta 2026-09-30 conectaba
+      // sin identidad y todo quedaba en el espacio común del navegador; `adoptCommon` lo trae al
+      // perfil una vez, sin borrar el original.
+      if (!identity) throw Object.assign(new Error('identity not available'), { code: 'no-identity' });
+      const store = await mod.Store.connect({ identity, adoptCommon: ['trivia.'] });
       // Store.connect() devuelve el singleton aunque su iframe TODAVÍA no esté
       // listo, si otro consumidor de la misma app lo creó hace un instante (la
       // moneda de support también usa el store, para "recientes"). Quien pierde
@@ -115,4 +121,11 @@ export async function materializeForShare(ref) {
   if (/^data:/i.test(ref)) return ref;            // data-URI: ya embebible
   if (ref.startsWith('store:')) return await resolveAsset(ref); // → data-URI local
   return '';
+}
+
+/** El almacén del ecosistema ya atado al perfil, para el punto del respaldo del topbar (null si no abrió). */
+export async function storeHandle () {
+  const b = await getBackend();
+  if (b.kind !== 'store') return null;
+  return (await import('@dotrino/store')).Store.current();
 }
