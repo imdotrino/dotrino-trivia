@@ -15,7 +15,7 @@ const DICT = {
     validCount: '{n} pregunta(s) válida(s)', invalidJson: 'JSON inválido: {err}',
     noQuestions: 'Sin preguntas todavía',
 
-    color: 'Color principal', theme: 'Tema', dark: 'Oscuro', light: 'Claro',
+    color: 'Color principal', theme: 'Tema', auto: 'Del sistema', dark: 'Oscuro', light: 'Claro',
     logo: 'Logo', bgWeb: 'Fondo (web)', bgMobile: 'Fondo (móvil)',
     imgUrlPh: 'URL de imagen (https://…)', upload: 'Subir', remove: 'Quitar',
     uploadHint: 'Las imágenes subidas se guardan en tu store (local a tu navegador). Para que se vean al compartir el enlace, usa una URL.',
@@ -56,7 +56,7 @@ const DICT = {
     validCount: '{n} valid question(s)', invalidJson: 'Invalid JSON: {err}',
     noQuestions: 'No questions yet',
 
-    color: 'Primary color', theme: 'Theme', dark: 'Dark', light: 'Light',
+    color: 'Primary color', theme: 'Theme', auto: 'System', dark: 'Dark', light: 'Light',
     logo: 'Logo', bgWeb: 'Background (web)', bgMobile: 'Background (mobile)',
     imgUrlPh: 'Image URL (https://…)', upload: 'Upload', remove: 'Remove',
     uploadHint: 'Uploaded images are saved in your store (local to your browser). To show them when sharing the link, use a URL.',

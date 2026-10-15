@@ -1,18 +1,19 @@
 :root {
-  --brand: #7c3aed; --brand-2: #6d28d9; --on-brand: #ffffff;
-  --bg: #0e0b1a; --surface: #171327; --surface-2: #211b38;
-  --text: #f4f2fb; --muted: #a99fc6; --border: rgba(255,255,255,.12);
-  --shadow: rgba(0,0,0,.45); --correct: #22c55e; --wrong: #ef4444;
-  --overlay: rgba(0,0,0,.66); --bg-web-img: none; --bg-mobile-img: none;
-  --radius: 16px;
+  /* Antes de aplicar la configuración: el tema del ecosistema (@dotrino/theme). La paleta
+     de cada trivia la pone palette.js en línea. */
+  --brand: var(--dt-accent); --brand-2: var(--dt-accent-press); --on-brand: var(--dt-accent-ink);
+  --bg: var(--dt-bg); --surface: var(--dt-surface); --surface-2: var(--dt-surface-2);
+  --text: var(--dt-text); --muted: var(--dt-text-dim); --border: var(--dt-line-soft);
+  --shadow: var(--dt-shadow-color); --correct: var(--dt-ok); --wrong: var(--dt-error);
+  --overlay: color-mix(in srgb, var(--dt-bg) 70%, transparent); --bg-web-img: none; --bg-mobile-img: none;
+  --radius: var(--dt-radius);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+  font-family: var(--dt-font);
   background: var(--bg); color: var(--text);
-  transition: background-color .35s, color .35s;
   -webkit-font-smoothing: antialiased;
 }
 #app { min-height: 100%; display: flex; flex-direction: column; position: relative; }
@@ -38,13 +39,6 @@ body.mode-play .bg-layer::after { content: ""; position: absolute; inset: 0; bac
    elige el usuario) y la fija arriba, porque el componente no es sticky. */
 dotrino-topbar {
   position: sticky; top: 0; z-index: 10;
-  --dotrino-topbar-bg: color-mix(in srgb, var(--surface) 80%, transparent);
-  --dotrino-topbar-border: var(--border);
-  --dotrino-topbar-text: var(--text);
-  --dotrino-topbar-muted: var(--muted);
-  --dotrino-topbar-accent: var(--brand);
-  --dotrino-topbar-accent-text: var(--on-brand);
-  --dotrino-topbar-font: inherit;
 }
 /* Botón instalar (Web Component @dotrino/install): mismo look
    que .btn.btn-ghost.sm de la topbar (fantasma con borde, compacto). */

@@ -11,7 +11,7 @@ export function defaultConfig() {
     shuffleQuestions: true,
     shuffleOptions: false,
     showCorrect: true,
-    theme: { color: '#7c3aed', mode: 'dark', logo: '', bgWeb: '', bgMobile: '' },
+    theme: { color: '#00658c', mode: 'auto', logo: '', bgWeb: '', bgMobile: '' },
   };
 }
 

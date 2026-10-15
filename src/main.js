@@ -1,8 +1,10 @@
+import '@dotrino/theme/theme.css'
 import './style.css';
 import { h, clear } from './dom.js';
 import { t, getLang, setLang } from './i18n.js';
 import { defaultConfig, mergeConfig } from './state.js';
-import { applyPalette } from './palette.js';
+import { applyPalette, DEFAULT_COLOR } from './palette.js';
+import { applyTheme as applyUserTheme } from '@dotrino/theme';
 import { loadConfig, saveConfig, resolveAsset } from './store.js';
 import { parseSharedConfig, buildShareLink } from './share.js';
 import { renderEditor } from './editor.js';
@@ -39,18 +41,6 @@ const app = document.getElementById('app');
 
 let cfg = defaultConfig();
 
-// Tema del modal "Mi perfil" (vars --ccp-*). Se expresa con las variables de la
-// paleta de la trivia (no con colores fijos): el usuario elige el color y el
-// modo claro/oscuro, y el modal los sigue solo.
-const PROFILE_THEME = {
-  '--ccp-bg': 'var(--surface)', '--ccp-bg-2': 'var(--bg)',
-  '--ccp-bg-3': 'var(--surface-2)', '--ccp-bg-4': 'var(--surface-2)',
-  '--ccp-border': 'var(--border)', '--ccp-text': 'var(--text)', '--ccp-muted': 'var(--muted)',
-  '--ccp-accent': 'var(--brand)', '--ccp-accent-2': 'var(--brand-2)',
-  '--ccp-accent-text': 'var(--on-brand)',
-  '--ccp-input-bg': 'var(--surface-2)', '--ccp-radius': 'var(--radius)',
-};
-
 // ---- shell ----
 const bgLayer = h('div', { class: 'bg-layer' });
 const view = h('main', { class: 'view' });
@@ -75,11 +65,11 @@ const topbar = h('dotrino-topbar', {
   icon: 'icon.svg',
   'brand-href': './',
   profile: true,
+  theme: true,
   'support-href': 'https://ko-fi.com/dotrino',
   'support-repo': 'imdotrino/dotrino-trivia',
   'support-discord': 'https://discord.gg/D648uq7cth',
 }, gearBtn, installBtn);
-topbar.profileTheme = PROFILE_THEME;
 
 // Moneda de support del modo juego: sin barra donde anclarla, flota arriba a la
 // derecha (§6.1). Sólo está en el DOM mientras se juega.
@@ -126,10 +116,19 @@ async function wireIdentity() {
 
 // ---- tema (paleta + fondos) ----
 async function applyTheme(c) {
-  const brand = applyPalette(document.documentElement, c.theme.color, c.theme.mode);
+  const mode = c.theme.mode;
+  const brand = applyPalette(document.documentElement, c.theme.color, mode);
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', brand);
-  document.documentElement.style.setProperty('color-scheme', c.theme.mode === 'light' ? 'light' : 'dark');
+  if (meta) meta.setAttribute('content', brand.startsWith('#') ? brand : DEFAULT_COLOR);
+  // 'auto' sigue al tema del ecosistema y deja el sol/luna del topbar. Un modo fijo
+  // (lo eligió quien creó la trivia) fija también el del topbar y quita el sol/luna.
+  if (mode === 'auto') {
+    topbar.setAttribute('theme', '');
+    applyUserTheme(); // vuelve a lo que eligió el usuario (o al sistema)
+  } else {
+    topbar.removeAttribute('theme');
+    document.documentElement.dataset.theme = mode;
+  }
 
   const [web, mob] = await Promise.all([resolveAsset(c.theme.bgWeb), resolveAsset(c.theme.bgMobile)]);
   const css = v => v ? `url("${String(v).replace(/"/g, '\\"')}")` : 'none';

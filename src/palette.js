@@ -56,6 +56,10 @@ export function luminance(hex) {
 }
 export function onColor(hex) { return luminance(hex) > 0.45 ? '#11131a' : '#ffffff'; }
 
+// Color por defecto: el del ecosistema. Con él y el modo 'auto' la trivia es el tema de
+// Dotrino tal cual (@dotrino/theme), claro u oscuro según el sistema o el sol/luna.
+export const DEFAULT_COLOR = '#00658c';
+
 export function derivePalette(color, mode) {
   const base = rgbToHex(hexToRgb(color));
   const { h, s } = rgbToHsl(hexToRgb(base));
@@ -63,6 +67,19 @@ export function derivePalette(color, mode) {
   const brand2 = hslToHex({ h, s: clamp(s, 0, 100), l: clamp(rgbToHsl(hexToRgb(base)).l - 12, 8, 92) });
   const onBrand = onColor(brand);
 
+  if (mode === 'auto') {
+    const own = base.toLowerCase() !== DEFAULT_COLOR;
+    return {
+      '--brand': own ? brand : 'var(--dt-accent)',
+      '--brand-2': own ? brand2 : 'var(--dt-accent-press)',
+      '--on-brand': own ? onBrand : 'var(--dt-accent-ink)',
+      '--bg': 'var(--dt-bg)', '--surface': 'var(--dt-surface)', '--surface-2': 'var(--dt-surface-2)',
+      '--text': 'var(--dt-text)', '--muted': 'var(--dt-text-dim)',
+      '--border': 'var(--dt-line-soft)', '--shadow': 'var(--dt-shadow-color)',
+      '--correct': 'var(--dt-ok)', '--wrong': 'var(--dt-error)',
+      '--overlay': 'color-mix(in srgb, var(--dt-bg) 70%, transparent)',
+    };
+  }
   if (mode === 'light') {
     return {
       '--brand': brand, '--brand-2': brand2, '--on-brand': onBrand,

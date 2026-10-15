@@ -2,6 +2,7 @@
 import { h, clear } from './dom.js';
 import { t, getLang } from './i18n.js';
 import { parseQuestionsInput } from './state.js';
+import { DEFAULT_COLOR } from './palette.js';
 import { sampleTrivia } from './sample.js';
 import { generatePrompt } from './prompt.js';
 import { putAsset, resolveAsset } from './store.js';
@@ -84,8 +85,8 @@ export function renderEditor(cfg, commit) {
   );
 
   // ---------- Apariencia ----------
-  const colorInput = h('input', { class: 'color', type: 'color', value: cfg.theme.color || '#7c3aed' });
-  const hexInput = h('input', { class: 'input hex', type: 'text', value: cfg.theme.color || '#7c3aed', maxlength: '7' });
+  const colorInput = h('input', { class: 'color', type: 'color', value: cfg.theme.color || DEFAULT_COLOR });
+  const hexInput = h('input', { class: 'input hex', type: 'text', value: cfg.theme.color || DEFAULT_COLOR, maxlength: '7' });
   colorInput.addEventListener('input', () => { cfg.theme.color = colorInput.value; hexInput.value = colorInput.value; commit(); });
   hexInput.addEventListener('input', () => {
     const v = hexInput.value.trim();
@@ -132,7 +133,7 @@ export function renderEditor(cfg, commit) {
   const appearanceSection = section('secAppearance',
     field('color', h('div', { class: 'color-row' }, colorInput, hexInput)),
     field('theme', segmented(
-      [{ value: 'dark', label: t('dark') }, { value: 'light', label: t('light') }],
+      [{ value: 'auto', label: t('auto') }, { value: 'dark', label: t('dark') }, { value: 'light', label: t('light') }],
       cfg.theme.mode, v => { cfg.theme.mode = v; commit(); })),
     assetRow('logo', 'logo'),
     assetRow('bgWeb', 'bgWeb'),
