@@ -48,8 +48,8 @@ async function importShim (store) {
     if (Array.isArray(arr) && arr.length) threads[k.slice(SHIM_PREFIX.length)] = arr;
   }
   for (const t of Object.keys(threads)) {
-    const ya = await store.listThread(t);
-    if (ya.length) delete threads[t];   // lo del almacén es más nuevo que el repliegue
+    const existing = await store.listThread(t);
+    if (existing.length) delete threads[t];   // lo del almacén es más nuevo que el repliegue
   }
   if (Object.keys(threads).length) await store.importThreads(threads, 'merge');
   localStorage.setItem(SHIM_DONE, String(Date.now()));

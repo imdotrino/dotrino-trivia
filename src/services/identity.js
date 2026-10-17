@@ -13,7 +13,7 @@ export async function getIdentity() {
   try {
     identity = await Identity.connect();
   } catch (e) {
-    console.warn('[trivia] vault inalcanzable:', e?.message || e);
+    console.warn('[trivia] vault unreachable:', e?.message || e);
     identity = null;
   }
   return identity;
