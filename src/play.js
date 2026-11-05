@@ -8,7 +8,22 @@ import { configSig, loadPlay, savePlay } from './playstate.js';
 const ICON_CHECK = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 6L20 5"/></svg>';
 const ICON_X = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
-// opts: { published, onExit, images:{logo}, brandName }
+/** Un botón de opción: lleva en `_value` lo que significa (true/false o el índice). */
+/** @typedef {HTMLButtonElement & { _value?: boolean | number }} OptionButton */
+
+/**
+ * @typedef {object} PlayOptions
+ * @property {boolean} [published]   abierta por enlace publicado: no guarda progreso
+ * @property {() => void} [onExit]
+ * @property {{ logo?: string }} [images]
+ * @property {string} [brandName]
+ */
+
+/**
+ * @param {import('./model').Config} cfg
+ * @param {PlayOptions} [opts]
+ * @returns {HTMLElement}
+ */
 export function renderPlay(cfg, opts = {}) {
   const flash = cfg.mode === 'flashcards';
   const root = h('div', { class: 'play' });
@@ -24,11 +39,13 @@ export function renderPlay(cfg, opts = {}) {
 
   let i = 0, score = 0;
 
+  /** @param {string} screen */
   function save(screen) {
     if (!persist) return;
     savePlay({ sig, screen, i, score, session });
   }
 
+  /** @param {Node} node */
   function go(node) { clear(root); root.append(node); root.scrollTop = 0; }
 
   function screenStart() {
@@ -47,6 +64,10 @@ export function renderPlay(cfg, opts = {}) {
     ));
   }
 
+  /**
+   * @param {import('./model').Question} q
+   * @returns {Array<{ label: string, value: boolean | number }>}
+   */
   function optionList(q) {
     if (q.type === 'boolean') {
       return [
@@ -54,11 +75,16 @@ export function renderPlay(cfg, opts = {}) {
         { label: t('tFalse'), value: false },
       ];
     }
-    return q.options.map((label, idx) => ({ label, value: idx }));
+    return q.options.map((label, /** @type {number} */ idx) => ({ label, value: idx }));
   }
+  /**
+   * @param {import('./model').Question} q
+   * @param {boolean | number | undefined} value
+   */
   function isCorrect(q, value) {
     return q.type === 'boolean' ? value === q.answer : value === q.answer;
   }
+  /** @param {import('./model').Question} q */
   function correctValue(q) { return q.answer; }
 
   function screenQuestion() {
@@ -71,13 +97,14 @@ export function renderPlay(cfg, opts = {}) {
     const feedback = h('div', { class: 'feedback' });
     const footer = h('div', { class: 'q-footer' });
 
+    /** @param {boolean | number | null} pickedValue */
     function lockAndShow(pickedValue) {
       if (answered) return;
       answered = true;
       const right = pickedValue == null ? false : isCorrect(q, pickedValue);
       if (!flash && right) score++;
 
-      [...optsWrap.children].forEach(btn => {
+      /** @type {OptionButton[]} */ ([...optsWrap.children]).forEach(btn => {
         const v = btn._value;
         btn.disabled = true;
         const isRight = isCorrect(q, v);
@@ -102,6 +129,7 @@ export function renderPlay(cfg, opts = {}) {
     }
 
     opts2.forEach(o => {
+      /** @type {OptionButton} */
       const btn = h('button', { class: 'opt', onclick: () => lockAndShow(o.value) }, o.label);
       btn._value = o.value;
       optsWrap.append(btn);
@@ -111,7 +139,7 @@ export function renderPlay(cfg, opts = {}) {
       clear(footer);
       footer.append(h('button', { class: 'btn btn-ghost', onclick: () => {
         // revelar: marca la correcta y muestra explicación, sin puntaje
-        [...optsWrap.children].forEach(btn => {
+        /** @type {OptionButton[]} */ ([...optsWrap.children]).forEach(btn => {
           btn.disabled = true;
           if (isCorrect(q, btn._value)) btn.classList.add('correct');
         });
@@ -162,7 +190,7 @@ export function renderPlay(cfg, opts = {}) {
   }
 
   // Resumir donde quedó (refresco) o empezar limpio.
-  if (restored && restored.screen === 'question' && Number.isInteger(restored.i) && restored.i < session.length) {
+  if (restored && restored.screen === 'question' && typeof restored.i === 'number' && Number.isInteger(restored.i) && restored.i < session.length) {
     i = restored.i; score = restored.score || 0;
     screenQuestion();
   } else if (restored && restored.screen === 'result') {

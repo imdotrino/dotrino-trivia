@@ -6,14 +6,16 @@ import { materializeForShare } from './store.js';
 
 const MAX_FRAGMENT = 1_600_000; // ~1.6 MB de fragmento; suficiente para imágenes chicas
 
+/** @param {string} str @returns {string} */
 function b64encode(str) {
   const bytes = new TextEncoder().encode(str);
   let bin = '';
   for (let i = 0; i < bytes.length; i += 0x8000) {
-    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + 0x8000)));
   }
   return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
+/** @param {string} b64 @returns {string} */
 function b64decode(b64) {
   b64 = b64.replace(/-/g, '+').replace(/_/g, '/');
   const pad = b64.length % 4 ? '='.repeat(4 - (b64.length % 4)) : '';
@@ -22,14 +24,20 @@ function b64decode(b64) {
   return new TextDecoder().decode(bytes);
 }
 
+/** @param {object} cfg */
 function encoded(cfg) { return '#t=' + b64encode(JSON.stringify(cfg)); }
 
+/**
+ * @param {import('./model').Config} cfg
+ * @returns {Promise<{ cfg: import('./model').Config, dropped: boolean }>}
+ */
 export async function buildShareConfig(cfg) {
-  const theme = cfg.theme || {};
+  const theme = cfg.theme || /** @type {Partial<import('./model').Theme>} */ ({});
   const logo = await materializeForShare(theme.logo);
   const bgWeb = await materializeForShare(theme.bgWeb);
   const bgMobile = await materializeForShare(theme.bgMobile);
 
+  /** @type {import('./model').Config} */
   const out = {
     v: 1,
     title: cfg.title || '',
@@ -38,12 +46,13 @@ export async function buildShareConfig(cfg) {
     shuffleQuestions: cfg.shuffleQuestions,
     shuffleOptions: cfg.shuffleOptions,
     showCorrect: cfg.showCorrect,
-    theme: { color: theme.color, mode: theme.mode, logo, bgWeb, bgMobile },
+    theme: { color: theme.color || '', mode: theme.mode || '', logo, bgWeb, bgMobile },
   };
 
   // Presupuesto: si el fragmento se pasa, soltar imágenes data: (no URLs) por peso.
   let dropped = false;
-  const isData = v => /^data:/i.test(v || '');
+  const isData = (/** @type {string} */ v) => /^data:/i.test(v || '');
+  /** @type {Array<'bgMobile' | 'bgWeb' | 'logo'>} */
   const order = ['bgMobile', 'bgWeb', 'logo'];
   for (const k of order) {
     if (encoded(out).length <= MAX_FRAGMENT) break;
@@ -52,6 +61,10 @@ export async function buildShareConfig(cfg) {
   return { cfg: out, dropped };
 }
 
+/**
+ * @param {import('./model').Config} cfg
+ * @returns {Promise<{ url: string, dropped: boolean }>}
+ */
 export async function buildShareLink(cfg) {
   const { cfg: shareCfg, dropped } = await buildShareConfig(cfg);
   const base = location.origin + location.pathname;
@@ -59,6 +72,7 @@ export async function buildShareLink(cfg) {
 }
 
 // Lee la trivia publicada del #fragment (si la hay). Devuelve cfg o null.
+/** @returns {import('./model').Config | null}  sin normalizar: quien la usa pasa por mergeConfig */
 export function parseSharedConfig() {
   const hash = location.hash || '';
   if (!hash.startsWith('#t=')) return null;

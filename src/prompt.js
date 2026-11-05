@@ -1,8 +1,12 @@
 // Generador de prompt para pegar en una IA y obtener el JSON de preguntas.
 // El tipo de cada pregunta ("multiple" o "boolean") se define POR PREGUNTA en su
 // JSON; no hay un modo global. El prompt documenta ambos para que la IA elija.
+/**
+ * @param {{ topic?: string, count?: string | number, lang?: string }} args
+ * @returns {string}
+ */
 export function generatePrompt({ topic, count, lang }) {
-  const n = Math.max(1, Math.min(100, parseInt(count, 10) || 10));
+  const n = Math.max(1, Math.min(100, parseInt(String(count), 10) || 10));
   const tp = (topic || '').trim() || (lang === 'en' ? 'general knowledge' : 'cultura general');
 
   if (lang === 'en') {

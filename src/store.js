@@ -7,22 +7,42 @@
 const THREAD_CFG = 'trivia.current';
 const THREAD_ASSETS = 'trivia.assets';
 
+/** @typedef {import('@dotrino/store').ThreadEntry} ThreadEntry */
+/**
+ * Lo que la app usa del almacén: el de verdad, o la memoria si no abrió.
+ * @typedef {object} Backend
+ * @property {'store' | 'memory'} kind
+ * @property {import('@dotrino/store').Store} [store]
+ * @property {(t: string, e: ThreadEntry) => Promise<unknown>} appendMessage
+ * @property {(t: string, o?: { limit?: number }) => Promise<ThreadEntry[]>} listThread
+ * @property {(t: string) => Promise<unknown>} removeThread
+ */
+
+/** @type {Promise<Backend> | null} */
 let backendPromise = null;
 
 // SIN REPLIEGUE SILENCIOSO (2026-09-30). Hasta ahora, si el almacén no abría, la partida se
 // guardaba sin avisar en localStorage (`trivia.shim.<hilo>`) y no llegaba nunca a la bóveda.
 // Ahora: la partida sigue EN MEMORIA y se DICE en pantalla (`onStoreProblem`), y lo que ya se
 // había guardado por ese camino se trae al almacén una vez (`importShim`), sin borrarlo.
+/** @type {unknown} */
 let problem = null;
+/** @type {Set<(e: unknown) => void>} */
 const problemListeners = new Set();
-/** Avisa (y avisa al suscribirse, si ya pasó) de que el almacén no abrió: no se guarda nada. */
+/**
+ * Avisa (y avisa al suscribirse, si ya pasó) de que el almacén no abrió: no se guarda nada.
+ * @param {(e: unknown) => void} fn
+ * @returns {() => boolean}  para dejar de escuchar
+ */
 export function onStoreProblem (fn) {
   problemListeners.add(fn);
   if (problem) fn(problem);
   return () => problemListeners.delete(fn);
 }
 
+/** @returns {Backend} */
 function memoryBackend () {
+  /** @type {Map<string, ThreadEntry[]>} */
   const mem = new Map();
   return {
     kind: 'memory',
@@ -35,10 +55,12 @@ function memoryBackend () {
 const SHIM_PREFIX = 'trivia.shim.';
 const SHIM_DONE = 'trivia.shim.imported';
 /** Trae al almacén, UNA vez, lo que guardó el repliegue viejo; solo los hilos que el almacén no tiene. */
+/** @param {import('@dotrino/store').Store} store */
 async function importShim (store) {
   let done = null;
   try { done = localStorage.getItem(SHIM_DONE); } catch { return; }
   if (done) return;
+  /** @type {Record<string, ThreadEntry[]>} */
   const threads = {};
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
@@ -55,6 +77,7 @@ async function importShim (store) {
   localStorage.setItem(SHIM_DONE, String(Date.now()));
 }
 
+/** @returns {Promise<Backend>} */
 async function getBackend() {
   if (backendPromise) return backendPromise;
   backendPromise = (async () => {
@@ -94,15 +117,18 @@ async function getBackend() {
   return backendPromise;
 }
 
+/** @returns {Promise<'store' | 'memory'>} */
 export async function storeKind() { return (await getBackend()).kind; }
 
 // --- Config ---
+/** @param {import('./model').Config} cfg */
 export async function saveConfig(cfg) {
   const b = await getBackend();
   try { await b.removeThread(THREAD_CFG); } catch {}
   await b.appendMessage(THREAD_CFG, { id: 'cfg', ts: Date.now(), config: cfg });
 }
 
+/** @returns {Promise<import('./model').Config | null>}  lo guardado, sin normalizar (pasa por mergeConfig) */
 export async function loadConfig() {
   const b = await getBackend();
   try {
@@ -116,13 +142,18 @@ export async function loadConfig() {
 }
 
 // --- Assets (imágenes) ---
-const assetCache = new Map(); // ref → dataURI
+/** @type {Map<string, string>} ref → dataURI */
+const assetCache = new Map();
 
 function uid() {
   try { return crypto.randomUUID(); } catch { return 'a' + Date.now() + Math.random().toString(36).slice(2); }
 }
 
 // Guarda un data-URI como blob en el store; devuelve una ref 'store:<id>'.
+/**
+ * @param {string} dataUri
+ * @returns {Promise<string>}  la ref `store:<id>`
+ */
 export async function putAsset(dataUri) {
   const b = await getBackend();
   const id = uid();
@@ -134,10 +165,15 @@ export async function putAsset(dataUri) {
 
 // Resuelve una ref a algo usable en CSS/<img>: http(s)/data se devuelven tal cual;
 // 'store:<id>' se busca en el store. Devuelve '' si no se encuentra.
+/**
+ * @param {string | undefined} ref
+ * @returns {Promise<string>}
+ */
 export async function resolveAsset(ref) {
   if (!ref) return '';
   if (/^(https?:|data:)/i.test(ref)) return ref;
-  if (assetCache.has(ref)) return assetCache.get(ref);
+  const cached = assetCache.get(ref);
+  if (cached !== undefined) return cached;
   if (ref.startsWith('store:')) {
     const id = ref.slice(6);
     const b = await getBackend();
@@ -152,6 +188,10 @@ export async function resolveAsset(ref) {
 
 // Para construir el enlace de compartir: devuelve el data-URI embebible de una ref
 // (http(s) se deja como URL — no se embebe; sólo store/data se materializan).
+/**
+ * @param {string | undefined} ref
+ * @returns {Promise<string>}
+ */
 export async function materializeForShare(ref) {
   if (!ref) return '';
   if (/^https?:/i.test(ref)) return ref;          // URL: se comparte tal cual
@@ -161,6 +201,7 @@ export async function materializeForShare(ref) {
 }
 
 /** El almacén del ecosistema ya atado al perfil, para el punto del respaldo del topbar (null si no abrió). */
+/** @returns {Promise<import('@dotrino/store').Store | null>} */
 export async function storeHandle () {
   const b = await getBackend();
   if (b.kind !== 'store') return null;

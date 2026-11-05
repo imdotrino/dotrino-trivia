@@ -1,18 +1,28 @@
 // Deriva TODA la paleta a partir de un solo color + modo claro/oscuro.
 // Devuelve un mapa de variables CSS que el resto de la app consume.
 
+/** @param {number} n @param {number} a @param {number} b */
 function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
 
+/** @typedef {{ r: number, g: number, b: number }} Rgb */
+/** @typedef {{ h: number, s: number, l: number }} Hsl */
+
+/**
+ * @param {unknown} hex
+ * @returns {Rgb}
+ */
 export function hexToRgb(hex) {
   let h = String(hex || '').trim().replace('#', '');
   if (h.length === 3) h = h.split('').map(c => c + c).join('');
   if (!/^[0-9a-fA-F]{6}$/.test(h)) h = '7c3aed';
   return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
 }
+/** @param {Rgb} rgb @returns {string} */
 export function rgbToHex({ r, g, b }) {
-  const h = n => clamp(Math.round(n), 0, 255).toString(16).padStart(2, '0');
+  const h = (/** @type {number} */ n) => clamp(Math.round(n), 0, 255).toString(16).padStart(2, '0');
   return '#' + h(r) + h(g) + h(b);
 }
+/** @param {Rgb} rgb @returns {Hsl} */
 export function rgbToHsl({ r, g, b }) {
   r /= 255; g /= 255; b /= 255;
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -29,11 +39,15 @@ export function rgbToHsl({ r, g, b }) {
   }
   return { h: h * 360, s: s * 100, l: l * 100 };
 }
+/** @param {Hsl} hsl @returns {string} */
 export function hslToHex({ h, s, l }) {
   h = ((h % 360) + 360) % 360 / 360; s = clamp(s, 0, 100) / 100; l = clamp(l, 0, 100) / 100;
-  let r, g, b;
+  /** @type {number} */ let r;
+  /** @type {number} */ let g;
+  /** @type {number} */ let b;
   if (s === 0) { r = g = b = l; }
   else {
+    /** @param {number} p @param {number} q @param {number} t */
     const hue2rgb = (p, q, t) => {
       if (t < 0) t += 1; if (t > 1) t -= 1;
       if (t < 1 / 6) return p + (q - p) * 6 * t;
@@ -49,17 +63,24 @@ export function hslToHex({ h, s, l }) {
 }
 
 // Luminancia relativa (WCAG) para decidir texto contrastante sobre el color.
+/** @param {string} hex @returns {number} */
 export function luminance(hex) {
   const { r, g, b } = hexToRgb(hex);
-  const f = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  const f = (/** @type {number} */ c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
   return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
 }
+/** @param {string} hex @returns {string} */
 export function onColor(hex) { return luminance(hex) > 0.45 ? '#11131a' : '#ffffff'; }
 
 // Color por defecto: el del ecosistema. Con él y el modo 'auto' la trivia es el tema de
 // Dotrino tal cual (@dotrino/theme), claro u oscuro según el sistema o el sol/luna.
 export const DEFAULT_COLOR = '#00658c';
 
+/**
+ * @param {string} color
+ * @param {string} mode  'auto' | 'light' | 'dark'
+ * @returns {Record<string, string>}  variables CSS
+ */
 export function derivePalette(color, mode) {
   const base = rgbToHex(hexToRgb(color));
   const { h, s } = rgbToHsl(hexToRgb(base));
@@ -110,6 +131,12 @@ export function derivePalette(color, mode) {
 }
 
 // Aplica la paleta a un elemento (root). Devuelve el theme-color para el <meta>.
+/**
+ * @param {HTMLElement} el
+ * @param {string} color
+ * @param {string} mode
+ * @returns {string}
+ */
 export function applyPalette(el, color, mode) {
   const p = derivePalette(color, mode);
   for (const k in p) el.style.setProperty(k, p[k]);

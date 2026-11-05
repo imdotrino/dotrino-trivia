@@ -33,11 +33,14 @@ const nav = createBackNav();
 // El JUEGO es el home; la EDICIÓN es una "capa" sobre él: en edición, volver
 // (físico/chevron) regresa al juego. En el juego (sin capa) volver va a
 // dotrino.com.
+/** @type {import('@dotrino/nav').BackLayerHandle | null} */
 let editLayer = null;
 
 const BRAND = 'Trivia';
 const ICON_GEAR = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
-const app = document.getElementById('app');
+const appEl = document.getElementById('app');
+if (!appEl) throw new Error('trivia: #app is missing from index.html');
+const app = appEl;
 
 let cfg = defaultConfig();
 
@@ -115,6 +118,7 @@ async function wireIdentity() {
 }
 
 // ---- tema (paleta + fondos) ----
+/** @param {import('./model').Config} c */
 async function applyTheme(c) {
   const mode = c.theme.mode;
   const brand = applyPalette(document.documentElement, c.theme.color, mode);
@@ -131,21 +135,26 @@ async function applyTheme(c) {
   }
 
   const [web, mob] = await Promise.all([resolveAsset(c.theme.bgWeb), resolveAsset(c.theme.bgMobile)]);
-  const css = v => v ? `url("${String(v).replace(/"/g, '\\"')}")` : 'none';
+  const css = (/** @type {string} */ v) => v ? `url("${String(v).replace(/"/g, '\\"')}")` : 'none';
   document.documentElement.style.setProperty('--bg-web-img', css(web));
   document.documentElement.style.setProperty('--bg-mobile-img', css(mob || web));
 }
+/** @param {import('./model').Config} c */
 async function resolvedLogo(c) { return await resolveAsset(c.theme.logo); }
 
+/** @type {ReturnType<typeof setTimeout> | undefined} */
+let toastTimer;
+/** @param {string} msg @param {number} [ms] */
 function showToast(msg, ms = 2600) {
   toast.textContent = msg; toast.classList.add('show');
-  clearTimeout(showToast._t); showToast._t = setTimeout(() => toast.classList.remove('show'), ms);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove('show'), ms);
 }
 // Si el almacén no abre, la partida sigue pero NO se guarda: se dice (store.js, sin repliegue).
 import('./store.js').then(({ onStoreProblem }) => onStoreProblem(() => showToast('⚠ ' + t('storeProblem'), 8000)));
 
 // ---- persistencia (debounced) ----
-let saveTimer = null;
+/** @type {ReturnType<typeof setTimeout> | undefined} */
+let saveTimer;
 function commit() {
   applyTheme(cfg);
   clearTimeout(saveTimer);
@@ -166,6 +175,9 @@ function showEditor() {
   if (!editLayer) editLayer = nav.open(() => showPlay({ published: false }));
 }
 
+/**
+ * @param {{ published: boolean, playCfg?: import('./model').Config }} args
+ */
 async function showPlay({ published, playCfg }) {
   // Volver al juego cierra la capa de edición (si fue el botón físico, ya está
   // cerrada y esto es un no-op seguro).

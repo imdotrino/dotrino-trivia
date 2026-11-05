@@ -6,10 +6,12 @@ const LS_UI = 'trivia.ui';     // { mode: 'play' | 'edit' }
 const LS_PLAY = 'trivia.play'; // { sig, screen, i, score, session }
 
 // --- modo de UI (en qué pantalla estaba el usuario) ---
+/** @returns {'play' | 'edit'} */
 export function getUiMode() {
-  try { const s = JSON.parse(localStorage.getItem(LS_UI)); if (s && (s.mode === 'play' || s.mode === 'edit')) return s.mode; } catch {}
+  try { const s = JSON.parse(localStorage.getItem(LS_UI) || 'null'); if (s && (s.mode === 'play' || s.mode === 'edit')) return s.mode; } catch {}
   return 'play'; // por defecto: arranca en modo juego
 }
+/** @param {string} mode */
 export function setUiMode(mode) {
   try { localStorage.setItem(LS_UI, JSON.stringify({ mode: mode === 'edit' ? 'edit' : 'play' })); } catch {}
 }
@@ -17,6 +19,10 @@ export function setUiMode(mode) {
 // --- progreso de la partida ---
 // Firma barata de la config jugable: si cambia (editaron preguntas, modo, etc.)
 // el progreso guardado deja de ser válido y se descarta.
+/**
+ * @param {import('./model').Config} cfg
+ * @returns {string}
+ */
 export function configSig(cfg) {
   const q = JSON.stringify(cfg.questions || []);
   let h = 5381;
@@ -25,13 +31,18 @@ export function configSig(cfg) {
     cfg.showCorrect ? 1 : 0, (cfg.questions || []).length, h].join(':');
 }
 
+/**
+ * @param {string} sig
+ * @returns {import('./model').PlayState | null}
+ */
 export function loadPlay(sig) {
   try {
-    const s = JSON.parse(localStorage.getItem(LS_PLAY));
+    const s = JSON.parse(localStorage.getItem(LS_PLAY) || 'null');
     if (s && s.sig === sig && Array.isArray(s.session)) return s;
   } catch {}
   return null;
 }
+/** @param {import('./model').PlayState} state */
 export function savePlay(state) {
   try { localStorage.setItem(LS_PLAY, JSON.stringify(state)); } catch {}
 }

@@ -1,7 +1,11 @@
 // Service worker estándar del ecosistema (§3): navegación network-first (los
 // deploys se ven al instante; offline cae a caché), resto cache-first con refresco
 // en segundo plano. Subir N de CACHE en cada cambio de assets cacheados.
-const CACHE = 'trivia-v2';
+// `self` es el ServiceWorkerGlobalScope; el lib WebWorker de TypeScript lo tipa como el
+// ámbito genérico de un worker, así que se dice aquí una vez.
+const sw = /** @type {ServiceWorkerGlobalScope} */ (/** @type {unknown} */ (self));
+
+const CACHE = 'trivia-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -12,25 +16,25 @@ const ASSETS = [
   './icon-maskable-512.png'
 ];
 
-self.addEventListener('install', e => {
+sw.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(() => {}));
-  self.skipWaiting();
+  sw.skipWaiting();
 });
 
-self.addEventListener('activate', e => {
+sw.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    ).then(() => sw.clients.claim())
   );
 });
 
-self.addEventListener('fetch', e => {
+sw.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
 
   const url = new URL(e.request.url);
   // Nunca interceptar otros orígenes (store.dotrino.com, jsDelivr, GoatCounter…).
-  if (url.origin !== self.location.origin) return;
+  if (url.origin !== sw.location.origin) return;
 
   const isNavigation = e.request.mode === 'navigate' || e.request.destination === 'document';
   if (isNavigation) {
@@ -39,7 +43,7 @@ self.addEventListener('fetch', e => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
         return res;
-      }).catch(() => caches.match(e.request).then(c => c || caches.match('./index.html')))
+      }).catch(() => caches.match(e.request).then(c => c || caches.match('./index.html')).then(c => c || Response.error()))
     );
     return;
   }
@@ -50,7 +54,7 @@ self.addEventListener('fetch', e => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
         return res;
-      }).catch(() => cached);
+      }).catch(() => cached || Response.error());
       return cached || network;
     })
   );

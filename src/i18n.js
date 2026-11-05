@@ -101,19 +101,33 @@ try {
 } catch {}
 
 // Mismo criterio que el topbar: preferencia guardada → idioma del navegador → es.
+/** @type {'es' | 'en'} */
 let lang = (() => {
   try { const s = localStorage.getItem(LS_LANG); if (s === 'es' || s === 'en') return s; } catch {}
   return (navigator.language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es';
 })();
 
+/** @returns {'es' | 'en'} */
 export function getLang() { return lang; }
+/** @param {string} l */
 export function setLang(l) {
   lang = l === 'en' ? 'en' : 'es';
   try { localStorage.setItem(LS_LANG, lang); } catch {}
 }
 
+/**
+ * Traduce `key`; `{nombre}` se sustituye por `params.nombre`. Una clave que no existe se
+ * devuelve tal cual.
+ * @param {string} key
+ * @param {Record<string, string | number>} [params]
+ * @returns {string}
+ */
 export function t(key, params) {
-  let s = (DICT[lang] && DICT[lang][key]) ?? (DICT.es[key]) ?? key;
-  if (params) for (const k in params) s = s.replaceAll('{' + k + '}', params[k]);
+  /** @type {Record<string, string>} */
+  const dict = DICT[lang];
+  /** @type {Record<string, string>} */
+  const es = DICT.es;
+  let s = (dict && dict[key]) ?? (es[key]) ?? key;
+  if (params) for (const k in params) s = s.replaceAll('{' + k + '}', String(params[k]));
   return s;
 }

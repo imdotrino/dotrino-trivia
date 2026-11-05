@@ -1,4 +1,8 @@
 // Trivia de ejemplo para que la app no arranque vacía y para demostrar el formato.
+/**
+ * @param {string} lang
+ * @returns {{ title: string, questions: import('./model').Question[] }}
+ */
 export function sampleTrivia(lang) {
   if (lang === 'en') {
     return {

@@ -9,7 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "playwright test",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit && tsc -p tsconfig.sw.json"
   },
   "dependencies": {
     "@dotrino/identity": "0.116.0",

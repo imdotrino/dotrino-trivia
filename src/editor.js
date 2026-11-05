@@ -7,12 +7,20 @@ import { sampleTrivia } from './sample.js';
 import { generatePrompt } from './prompt.js';
 import { putAsset, resolveAsset } from './store.js';
 
+/**
+ * @param {string} titleKey
+ * @param {...import('./dom.js').Kid} kids
+ */
 function section(titleKey, ...kids) {
   return h('section', { class: 'card' },
     h('h2', { class: 'card-title' }, t(titleKey)),
     h('div', { class: 'card-body' }, ...kids));
 }
 
+/**
+ * @param {string} labelKey
+ * @param {Node} control
+ */
 function field(labelKey, control) {
   // div (no <label>): envolver varios botones/controles en un <label> contamina
   // el nombre accesible de cada control. El click-to-focus no se necesita acá.
@@ -20,6 +28,11 @@ function field(labelKey, control) {
     h('span', { class: 'field-label' }, t(labelKey)), control);
 }
 
+/**
+ * @param {Array<{ value: string, label: string }>} options
+ * @param {string} current
+ * @param {(value: string) => void} onPick
+ */
 function segmented(options, current, onPick) {
   const wrap = h('div', { class: 'segmented' });
   options.forEach(o => {
@@ -32,6 +45,11 @@ function segmented(options, current, onPick) {
   return wrap;
 }
 
+/**
+ * @param {string} labelKey
+ * @param {boolean} checked
+ * @param {(checked: boolean) => void} onToggle
+ */
 function toggle(labelKey, checked, onToggle) {
   const input = h('input', { type: 'checkbox', ...(checked ? { checked: true } : {}) });
   input.addEventListener('change', () => onToggle(input.checked));
@@ -41,6 +59,11 @@ function toggle(labelKey, checked, onToggle) {
 }
 
 // cfg: config mutable; commit(): persiste + reaplica tema.
+/**
+ * @param {import('./model').Config} cfg
+ * @param {() => void} commit
+ * @returns {HTMLElement}
+ */
 export function renderEditor(cfg, commit) {
   const root = h('div', { class: 'editor' });
 
@@ -56,7 +79,7 @@ export function renderEditor(cfg, commit) {
       if (title && !cfg.title) { cfg.title = title; titleInput.value = title; }
       status.append(h('span', { class: 'ok' }, t('validCount', { n: questions.length })));
     } catch (e) {
-      status.append(h('span', { class: 'err' }, t('invalidJson', { err: e.message })));
+      status.append(h('span', { class: 'err' }, t('invalidJson', { err: /** @type {Error} */ (e).message })));
     }
   }
 
@@ -93,13 +116,18 @@ export function renderEditor(cfg, commit) {
     if (/^#?[0-9a-fA-F]{6}$/.test(v)) { const hx = v.startsWith('#') ? v : '#' + v; cfg.theme.color = hx; colorInput.value = hx; commit(); }
   });
 
+  /**
+   * @param {string} labelKey
+   * @param {'logo' | 'bgWeb' | 'bgMobile'} fieldName
+   */
   function assetRow(labelKey, fieldName) {
     const row = h('div', { class: 'asset-row' });
     const fileInput = h('input', { type: 'file', accept: 'image/*', style: { display: 'none' } });
     fileInput.addEventListener('change', async () => {
       const f = fileInput.files && fileInput.files[0];
       if (!f) return;
-      const dataUri = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
+      // readAsDataURL: el resultado es un texto (data-URI).
+      const dataUri = await new Promise((/** @type {(v: string) => void} */ res) => { const r = new FileReader(); r.onload = () => res(/** @type {string} */ (r.result)); r.readAsDataURL(f); });
       const ref = await putAsset(dataUri);   // → store (obligatorio); fallback localStorage
       cfg.theme[fieldName] = ref; commit(); build();
     });
@@ -163,6 +191,7 @@ export function renderEditor(cfg, commit) {
 }
 
 // ---------- Modal del generador de prompt ----------
+/** @param {import('./model').Config} cfg */
 function openPromptModal(cfg) {
   const lang = getLang();
   const topic = h('input', { class: 'input', type: 'text', placeholder: t('topicPh') });
